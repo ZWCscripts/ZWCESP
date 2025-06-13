@@ -1,0 +1,350 @@
+local CFG = {
+    MainColor = Color3.fromRGB(20,25,35),
+    AccentColor = Color3.fromRGB(0,180,255),
+    NeonColor = Color3.fromRGB(0,255,255),
+    BorderColor = Color3.fromRGB(0,60,110),
+    BGTransparency = 0.22,
+    NeonTransparency = 0.45,
+    Font = Enum.Font.GothamBold
+}
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "ZWCscripts_ESPGUI"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 400, 0, 340)
+frame.Position = UDim2.new(0.5, -200, 0.28, 0)
+frame.BackgroundColor3 = CFG.MainColor
+frame.BorderSizePixel = 2
+frame.BorderColor3 = CFG.BorderColor
+frame.BackgroundTransparency = CFG.BGTransparency
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+
+local bar = Instance.new("Frame")
+bar.Size = UDim2.new(1,0,0,36)
+bar.BackgroundColor3 = CFG.MainColor
+bar.BackgroundTransparency = 0.10
+bar.BorderSizePixel = 0
+bar.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,-60,1,0)
+title.Position = UDim2.new(0,12,0,0)
+title.BackgroundTransparency = 1
+title.Text = "[NEON ESP] ZWCscripts"
+title.Font = CFG.Font
+title.TextColor3 = CFG.NeonColor
+title.TextStrokeTransparency = 0.7
+title.TextSize = 20
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = bar
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0,28,0,28)
+close.Position = UDim2.new(1,-35,0.5,-14)
+close.BackgroundColor3 = Color3.fromRGB(80,20,30)
+close.BackgroundTransparency = 0.16
+close.Text = "✕"
+close.TextColor3 = Color3.fromRGB(255,120,130)
+close.Font = CFG.Font
+close.TextSize = 18
+close.BorderSizePixel = 0
+close.Parent = bar
+
+local minimize = Instance.new("TextButton")
+minimize.Size = UDim2.new(0,28,0,28)
+minimize.Position = UDim2.new(1,-67,0.5,-14)
+minimize.BackgroundColor3 = Color3.fromRGB(30,60,90)
+minimize.BackgroundTransparency = 0.16
+minimize.Text = "—"
+minimize.TextColor3 = CFG.AccentColor
+minimize.Font = CFG.Font
+minimize.TextSize = 18
+minimize.BorderSizePixel = 0
+minimize.Parent = bar
+
+local tablist = Instance.new("Frame")
+tablist.Size = UDim2.new(0, 108, 1, -44)
+tablist.Position = UDim2.new(0,0,0,36)
+tablist.BackgroundColor3 = CFG.MainColor
+tablist.BackgroundTransparency = 0.17
+tablist.BorderSizePixel = 0
+tablist.Parent = frame
+
+local tabs = {"Visual","Aim","Customize","Misc"}
+local tabFrames = {}
+for i,tab in ipairs(tabs) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -12, 0, 36)
+    btn.Position = UDim2.new(0, 6, 0, (i-1)*40 + 4)
+    btn.BackgroundColor3 = i==1 and CFG.AccentColor or Color3.fromRGB(36,36,48)
+    btn.BackgroundTransparency = i==1 and 0.18 or 0.23
+    btn.Text = tab
+    btn.Font = CFG.Font
+    btn.TextColor3 = i==1 and Color3.fromRGB(16,24,32) or CFG.NeonColor
+    btn.TextSize = 16
+    btn.BorderSizePixel = 0
+    btn.Parent = tablist
+    tabFrames[i] = Instance.new("Frame")
+    tabFrames[i].Size = UDim2.new(1, -120, 1, -48)
+    tabFrames[i].Position = UDim2.new(0, 116, 0, 44)
+    tabFrames[i].BackgroundColor3 = Color3.fromRGB(10,15,22)
+    tabFrames[i].BackgroundTransparency = 0.32
+    tabFrames[i].BorderSizePixel = 0
+    tabFrames[i].Visible = (i==1)
+    tabFrames[i].Parent = frame
+    btn.MouseButton1Click:Connect(function()
+        for j=1,#tabs do
+            tabFrames[j].Visible = (i==j)
+            tablist[j].BackgroundColor3 = (i==j) and CFG.AccentColor or Color3.fromRGB(36,36,48)
+            tablist[j].TextColor3 = (i==j) and Color3.fromRGB(16,24,32) or CFG.NeonColor
+            tablist[j].BackgroundTransparency = (i==j) and 0.18 or 0.23
+        end
+    end)
+end
+
+local visualTab = tabFrames[1]
+local y = 14
+local function addToggle(text, default, cb)
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -30, 0, 30)
+    bg.Position = UDim2.new(0, 18, 0, y)
+    bg.BackgroundColor3 = Color3.fromRGB(24,32,44)
+    bg.BackgroundTransparency = 0.33
+    bg.BorderSizePixel = 0
+    bg.Parent = visualTab
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1,-48,1,0)
+    lbl.Position = UDim2.new(0,0,0,0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.Font = CFG.Font
+    lbl.TextColor3 = Color3.fromRGB(180,200,240)
+    lbl.TextSize = 16
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = bg
+    local tog = Instance.new("TextButton")
+    tog.Size = UDim2.new(0, 32, 1, -8)
+    tog.Position = UDim2.new(1,-38,0,4)
+    tog.BackgroundColor3 = default and CFG.AccentColor or Color3.fromRGB(48,52,64)
+    tog.Text = default and "✓" or ""
+    tog.TextColor3 = default and Color3.fromRGB(20,30,38) or CFG.AccentColor
+    tog.Font = CFG.Font
+    tog.TextSize = 17
+    tog.BorderSizePixel = 0
+    tog.Parent = bg
+    local val = default
+    tog.MouseButton1Click:Connect(function()
+        val = not val
+        tog.BackgroundColor3 = val and CFG.AccentColor or Color3.fromRGB(48,52,64)
+        tog.Text = val and "✓" or ""
+        tog.TextColor3 = val and Color3.fromRGB(20,30,38) or CFG.AccentColor
+        cb(val)
+    end)
+    y = y + 38
+    return function() return val end
+end
+
+local showESP = addToggle("Neon Box ESP", true, function(val) _G.ESPEnabled = val end)
+local showName = addToggle("Show Name", true, function(val) _G.ShowName = val end)
+local showDist = addToggle("Show Distance", true, function(val) _G.ShowDist = val end)
+local showTracer = addToggle("Tracers", true, function(val) _G.ShowTracer = val end)
+
+local traceY = y + 10
+local sliderBG = Instance.new("Frame")
+sliderBG.Size = UDim2.new(1,-44,0,28)
+sliderBG.Position = UDim2.new(0,18,0,traceY)
+sliderBG.BackgroundColor3 = Color3.fromRGB(24,32,44)
+sliderBG.BackgroundTransparency = 0.33
+sliderBG.BorderSizePixel = 0
+sliderBG.Parent = visualTab
+
+local sliderBar = Instance.new("Frame")
+sliderBar.Size = UDim2.new(0.65,0,0.26,0)
+sliderBar.Position = UDim2.new(0,92,0.5,-4)
+sliderBar.BackgroundColor3 = CFG.NeonColor
+sliderBar.BackgroundTransparency = 0.13
+sliderBar.BorderSizePixel = 0
+sliderBar.Parent = sliderBG
+
+local sliderLabel = Instance.new("TextLabel")
+sliderLabel.Size = UDim2.new(0,80,1,0)
+sliderLabel.Position = UDim2.new(0,0,0,0)
+sliderLabel.BackgroundTransparency = 1
+sliderLabel.Text = "Tracer Size"
+sliderLabel.Font = CFG.Font
+sliderLabel.TextColor3 = Color3.fromRGB(180,200,240)
+sliderLabel.TextSize = 16
+sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+sliderLabel.Parent = sliderBG
+
+local sliderVal = Instance.new("TextLabel")
+sliderVal.Size = UDim2.new(0,36,1,0)
+sliderVal.Position = UDim2.new(1,-38,0,0)
+sliderVal.BackgroundTransparency = 1
+sliderVal.Text = "2"
+sliderVal.Font = CFG.Font
+sliderVal.TextColor3 = CFG.NeonColor
+sliderVal.TextSize = 15
+sliderVal.Parent = sliderBG
+
+local TRACER_SIZE = 2
+sliderBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local conn
+        conn = RunService.RenderStepped:Connect(function()
+            local mouse = game:GetService("UserInputService"):GetMouseLocation().X
+            local absFrame = sliderBar.AbsolutePosition.X
+            local rel = math.clamp((mouse - absFrame) / sliderBar.AbsoluteSize.X, 0, 1)
+            local val = math.floor(rel * 8) + 1
+            sliderVal.Text = tostring(val)
+            TRACER_SIZE = val
+            if input.UserInputState == Enum.UserInputState.End then
+                if conn then conn:Disconnect() end
+            end
+        end)
+    end
+end)
+
+_G.ESPEnabled = true
+_G.ShowName = true
+_G.ShowDist = true
+_G.ShowTracer = true
+
+local function clearESPs()
+    for _,plr in ipairs(Players:GetPlayers()) do
+        if plr.Character then
+            if plr.Character:FindFirstChild("ZWCEspBox") then plr.Character.ZWCEspBox:Destroy() end
+            if plr.Character:FindFirstChild("ZWCEspBill") then plr.Character.ZWCEspBill:Destroy() end
+            if plr.Character:FindFirstChild("ZWCEspTracer") then plr.Character.ZWCEspTracer:Destroy() end
+        end
+    end
+end
+
+local function addESP(plr)
+    if plr == LocalPlayer then return end
+    local function charAdded(char)
+        if not char:FindFirstChild("ZWCEspBox") then
+            local box = Instance.new("BoxHandleAdornment")
+            box.Name = "ZWCEspBox"
+            box.Adornee = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+            box.Size = (box.Adornee and box.Adornee.Size + Vector3.new(0.1,0.1,0.1)) or Vector3.new(2,4,2)
+            box.AlwaysOnTop = true
+            box.ZIndex = 8
+            box.Transparency = CFG.NeonTransparency
+            box.Color3 = CFG.NeonColor
+            box.LineThickness = 2
+            box.Parent = char
+        end
+        if not char:FindFirstChild("ZWCEspBill") then
+            local bb = Instance.new("BillboardGui")
+            bb.Name = "ZWCEspBill"
+            bb.Adornee = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
+            bb.Size = UDim2.new(0, 130, 0, 36)
+            bb.AlwaysOnTop = true
+            bb.StudsOffset = Vector3.new(0, 2, 0)
+            bb.Parent = char
+            local name = Instance.new("TextLabel")
+            name.Name = "ZWCEspName"
+            name.BackgroundTransparency = 1
+            name.TextColor3 = CFG.NeonColor
+            name.TextStrokeTransparency = 0.4
+            name.Font = CFG.Font
+            name.TextSize = 14
+            name.Size = UDim2.new(1,0,0.5,0)
+            name.Text = plr.DisplayName or plr.Name
+            name.Parent = bb
+            local dist = Instance.new("TextLabel")
+            dist.Name = "ZWCEspDist"
+            dist.BackgroundTransparency = 1
+            dist.TextColor3 = CFG.NeonColor
+            dist.TextStrokeTransparency = 0.2
+            dist.Font = CFG.Font
+            dist.TextSize = 13
+            dist.Position = UDim2.new(0,0,0.5,0)
+            dist.Size = UDim2.new(1,0,0.5,0)
+            dist.Text = ""
+            dist.Parent = bb
+        end
+        if not char:FindFirstChild("ZWCEspTracer") then
+            local tracer = Instance.new("Attachment")
+            tracer.Name = "ZWCEspTracer"
+            tracer.Parent = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+        end
+    end
+    if plr.Character then charAdded(plr.Character) end
+    plr.CharacterAdded:Connect(charAdded)
+end
+
+for _,plr in ipairs(Players:GetPlayers()) do addESP(plr) end
+Players.PlayerAdded:Connect(addESP)
+Players.PlayerRemoving:Connect(function(plr) clearESPs() end)
+
+RunService.RenderStepped:Connect(function()
+    for _,plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and _G.ESPEnabled then
+            local char = plr.Character
+            local box = char:FindFirstChild("ZWCEspBox")
+            if box then
+                box.Visible = _G.ESPEnabled
+                box.Color3 = CFG.NeonColor
+                box.Transparency = CFG.NeonTransparency
+            end
+            local bb = char:FindFirstChild("ZWCEspBill")
+            if bb then
+                bb.Enabled = (_G.ShowName or _G.ShowDist)
+                local name = bb:FindFirstChild("ZWCEspName")
+                if name then name.Visible = _G.ShowName end
+                local dist = bb:FindFirstChild("ZWCEspDist")
+                if dist then
+                    dist.Visible = _G.ShowDist
+                    if _G.ShowDist and char:FindFirstChild("HumanoidRootPart") then
+                        local studs = (char.HumanoidRootPart.Position-Camera.CFrame.Position).Magnitude
+                        dist.Text = string.format("%.0fm", studs/3.3)
+                    end
+                end
+            end
+        else
+            if plr.Character then
+                if plr.Character:FindFirstChild("ZWCEspBox") then plr.Character.ZWCEspBox.Visible = false end
+                if plr.Character:FindFirstChild("ZWCEspBill") then plr.Character.ZWCEspBill.Enabled = false end
+            end
+        end
+    end
+end)
+
+close.MouseButton1Click:Connect(function() gui:Destroy() clearESPs() end)
+local minimized = false
+minimize.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    frame.Visible = not minimized
+end)
+
+local function enableMobileDrag(f)
+    local dragToggle, dragStart, startPos
+    f.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragToggle = true
+            dragStart = input.Position
+            startPos = f.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragToggle = false end end)
+        end
+    end)
+    f.InputChanged:Connect(function(input)
+        if dragToggle and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+            local delta = input.Position-dragStart
+            f.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+delta.X, startPos.Y.Scale, startPos.Y.Offset+delta.Y)
+        end
+    end)
+end
+enableMobileDrag(frame)
