@@ -1,155 +1,328 @@
---// Neon Box ESP + Mesafe + Name + Line (Her oyunda, duvar arkası, PC-Mobil)
+--// ZWCscripts Modern Animated Round GUI + Circle Toggle + Animated Buttons //--
+-- Referans: [Görsellerine ve açıklamana göre özel tasarım]
 
-local ESP_COLOR = Color3.fromRGB(0, 255, 255) -- Neon mavi
-local ESP_THICKNESS = 2
-local FONT = Enum.Font.GothamBold
-
+local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
 
--- Neon kutu için SurfaceGui'ler (Avatarı fazla bozmadan)
-local function addBoxESP(char)
-    if not char or char:FindFirstChild("ESP_BOX") then return end
-    for _,part in ipairs({"HumanoidRootPart","UpperTorso","Torso"}) do
-        if char:FindFirstChild(part) then
-            local box = Instance.new("BoxHandleAdornment")
-            box.Name = "ESP_BOX"
-            box.Adornee = char[part]
-            box.AlwaysOnTop = true
-            box.ZIndex = 10
-            box.Size = char[part].Size + Vector3.new(0.1,0.1,0.1)
-            box.Transparency = 0.6
-            box.Color3 = ESP_COLOR
-            box.LineThickness = ESP_THICKNESS
-            box.Parent = char
-            break
-        end
-    end
+-- Renkler ve ayarlar
+local CFG = {
+    MainColor = Color3.fromRGB(13,19,32),
+    Accent = Color3.fromRGB(0,178,255),
+    Neon = Color3.fromRGB(0,255,255),
+    Border = Color3.fromRGB(0,40,80),
+    BGTransparency = 0.22,
+    NeonTransparency = 0.46,
+    Font = Enum.Font.GothamBold,
+    Shadow = Color3.fromRGB(0,0,0),
+    ButtonOff = Color3.fromRGB(32,32,42),
+    ButtonOn = Color3.fromRGB(0,178,255),
+}
+
+--== Ana GUI ve Frame ==--
+local gui = Instance.new("ScreenGui")
+gui.Name = "ZWCscripts_AnimatedGUI"
+gui.Parent = LocalPlayer.PlayerGui
+gui.IgnoreGuiInset = true
+gui.ResetOnSpawn = false
+
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.new(0, 410, 0, 320)
+main.Position = UDim2.new(0.5, -205, 0.3, 0)
+main.BackgroundColor3 = CFG.MainColor
+main.BackgroundTransparency = CFG.BGTransparency
+main.BorderSizePixel = 0
+main.ClipsDescendants = true
+main.Parent = gui
+
+main.AnchorPoint = Vector2.new(0,0)
+main.Active = true
+main.Draggable = true
+main.ZIndex = 2
+main.BackgroundColor3 = CFG.MainColor
+
+-- Köşeleri yuvarlak (ana çerçeve)
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 22)
+corner.Parent = main
+
+-- Gölge efekti
+local shadow = Instance.new("ImageLabel")
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://1316045217"
+shadow.ImageTransparency = 0.75
+shadow.Size = UDim2.new(1,30,1,30)
+shadow.Position = UDim2.new(0,-15,0,-15)
+shadow.ZIndex = 1
+shadow.Parent = main
+
+-- Üst bar ve başlık
+local bar = Instance.new("Frame")
+bar.Size = UDim2.new(1,0,0,38)
+bar.BackgroundColor3 = CFG.MainColor
+bar.BackgroundTransparency = 0.09
+bar.BorderSizePixel = 0
+bar.Parent = main
+
+local barCorner = Instance.new("UICorner")
+barCorner.CornerRadius = UDim.new(0, 15)
+barCorner.Parent = bar
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,-90,1,0)
+title.Position = UDim2.new(0,18,0,0)
+title.BackgroundTransparency = 1
+title.Text = "ZWCscripts ESP Menu"
+title.Font = CFG.Font
+title.TextColor3 = CFG.Neon
+title.TextStrokeTransparency = 0.7
+title.TextSize = 19
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = bar
+
+-- Animasyonlu oval buton (kapat/küçült)
+local function animatedButton(icon, color, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 34, 0, 34)
+    btn.BackgroundColor3 = color
+    btn.BackgroundTransparency = 0.25
+    btn.AutoButtonColor = false
+    btn.Text = icon
+    btn.Font = CFG.Font
+    btn.TextSize = 21
+    btn.TextColor3 = Color3.fromRGB(245,245,255)
+    btn.ZIndex = 5
+    btn.BorderSizePixel = 0
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 17)
+    btnCorner.Parent = btn
+    -- Animasyon
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.18), {
+            BackgroundColor3 = color:Lerp(CFG.Neon,0.28),
+            BackgroundTransparency = 0.14
+        }):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.18), {
+            BackgroundColor3 = color,
+            BackgroundTransparency = 0.25
+        }):Play()
+    end)
+    btn.MouseButton1Click:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.07),
+            {BackgroundColor3 = color:Lerp(CFG.Neon,0.7)}
+        ):Play()
+        callback()
+        wait(0.15)
+        TweenService:Create(btn, TweenInfo.new(0.12),
+            {BackgroundColor3 = color}
+        ):Play()
+    end)
+    return btn
 end
 
-local function removeBoxESP(char)
-    if char and char:FindFirstChild("ESP_BOX") then
-        char.ESP_BOX:Destroy()
-    end
-end
+-- Kapat ve küçültme butonları (oval ve animasyonlu)
+local close = animatedButton("✕", Color3.fromRGB(50,16,32), function() gui:Destroy() end)
+close.Position = UDim2.new(1,-42,0.5,-17)
+close.Parent = bar
 
-local function addNeonOutline(char)
-    for _,v in ipairs(char:GetChildren()) do
-        if v:IsA("BasePart") and not v:FindFirstChild("ESP_NEON") then
-            local neon = Instance.new("SelectionBox")
-            neon.Name = "ESP_NEON"
-            neon.Adornee = v
-            neon.LineThickness = 0.06
-            neon.Color3 = ESP_COLOR
-            neon.SurfaceColor3 = ESP_COLOR
-            neon.SurfaceTransparency = 0.4
-            neon.Parent = v
-        end
-    end
-end
-
-local function removeNeonOutline(char)
-    for _,v in ipairs(char:GetChildren()) do
-        if v:IsA("BasePart") and v:FindFirstChild("ESP_NEON") then
-            v.ESP_NEON:Destroy()
-        end
-    end
-end
-
--- Billboard ESP (isim, mesafe, çizgi)
-local function addBillboardESP(plr, char)
-    if char:FindFirstChild("ESP_BILL") then return end
-    local bb = Instance.new("BillboardGui")
-    bb.Name = "ESP_BILL"
-    bb.Adornee = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
-    bb.Size = UDim2.new(0, 200, 0, 60)
-    bb.AlwaysOnTop = true
-    bb.StudsOffset = Vector3.new(0, 2, 0)
-    bb.Parent = char
-
-    local name = Instance.new("TextLabel")
-    name.BackgroundTransparency = 1
-    name.TextColor3 = ESP_COLOR
-    name.TextStrokeTransparency = 0.4
-    name.Font = FONT
-    name.TextSize = 18
-    name.Size = UDim2.new(1,0,0.5,0)
-    name.Text = plr.DisplayName or plr.Name
-    name.Parent = bb
-
-    local dist = Instance.new("TextLabel")
-    dist.BackgroundTransparency = 1
-    dist.TextColor3 = ESP_COLOR
-    dist.TextStrokeTransparency = 0.3
-    dist.Font = FONT
-    dist.TextSize = 16
-    dist.Position = UDim2.new(0,0,0.5,0)
-    dist.Size = UDim2.new(1,0,0.5,0)
-    dist.Name = "ESP_DIST"
-    dist.Text = ""
-    dist.Parent = bb
-end
-
-local function removeBillboardESP(char)
-    if char and char:FindFirstChild("ESP_BILL") then
-        char.ESP_BILL:Destroy()
-    end
-end
-
--- ESP Güncelleme (mesafe, çizgi)
-local function updateESP(plr, char)
-    if char:FindFirstChild("ESP_BILL") then
-        local root = char:FindFirstChild("HumanoidRootPart")
-        if root then
-            local dist = (root.Position - Camera.CFrame.Position).Magnitude
-            local distLabel = char.ESP_BILL:FindFirstChild("ESP_DIST")
-            if distLabel then
-                distLabel.Text = string.format("%.0fm", dist/3.3) -- Roblox'ta 1m ≈ 3.3 studs
-            end
-        end
-    end
-end
-
--- ESP ekle/çıkar
-local function addESP(plr)
-    if plr == Players.LocalPlayer then return end
-    local function charAdded(char)
-        addBoxESP(char)
-        addNeonOutline(char)
-        addBillboardESP(plr, char)
-        char.AncestryChanged:Connect(function(_, parent)
-            if not parent then
-                removeBoxESP(char)
-                removeNeonOutline(char)
-                removeBillboardESP(char)
-            end
-        end)
-    end
-    if plr.Character then charAdded(plr.Character) end
-    plr.CharacterAdded:Connect(charAdded)
-end
-
-local function removeESP(plr)
-    if plr.Character then
-        removeBoxESP(plr.Character)
-        removeNeonOutline(plr.Character)
-        removeBillboardESP(plr.Character)
-    end
-end
-
--- Tüm oyunculara uygula
-for _,plr in ipairs(Players:GetPlayers()) do
-    addESP(plr)
-end
-Players.PlayerAdded:Connect(addESP)
-Players.PlayerRemoving:Connect(removeESP)
-
--- Mesafe güncellemesi
-RunService.RenderStepped:Connect(function()
-    for _,plr in ipairs(Players:GetPlayers()) do
-        if plr ~= Players.LocalPlayer and plr.Character then
-            updateESP(plr, plr.Character)
-        end
-    end
+local minimize = animatedButton("—", Color3.fromRGB(16,48,90), function()
+    main.Visible = false
+    gui.Minimized.Visible = true
 end)
+minimize.Position = UDim2.new(1,-80,0.5,-17)
+minimize.Parent = bar
+
+-- Minimize olduğunda açmak için küçük yuvarlak buton
+local mini = Instance.new("Frame")
+mini.Name = "Minimized"
+mini.Size = UDim2.new(0,52,0,52)
+mini.Position = UDim2.new(0,30,0.3,0)
+mini.BackgroundColor3 = CFG.MainColor
+mini.BackgroundTransparency = 0.09
+mini.Visible = false
+mini.Parent = gui
+
+local miniCorner = Instance.new("UICorner")
+miniCorner.CornerRadius = UDim.new(1,0)
+miniCorner.Parent = mini
+
+local miniBtn = animatedButton("≡", CFG.Accent, function()
+    main.Visible = true
+    mini.Visible = false
+end)
+miniBtn.Size = UDim2.new(1,-12,1,-12)
+miniBtn.Position = UDim2.new(0,6,0,6)
+miniBtn.Parent = mini
+
+--== Sekme menüsü ==--
+local tablist = Instance.new("Frame")
+tablist.Size = UDim2.new(0, 110, 1, -52)
+tablist.Position = UDim2.new(0,0,0,42)
+tablist.BackgroundColor3 = CFG.MainColor
+tablist.BackgroundTransparency = 0.21
+tablist.BorderSizePixel = 0
+tablist.Parent = main
+
+local tabCorner = Instance.new("UICorner")
+tabCorner.CornerRadius = UDim.new(0,16)
+tabCorner.Parent = tablist
+
+local tabs = {"Visuals","Other"}
+local tabFrames = {}
+local selectedTab = 1
+
+for i,tab in ipairs(tabs) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -14, 0, 40)
+    btn.Position = UDim2.new(0, 7, 0, (i-1)*48 + 8)
+    btn.BackgroundColor3 = i==1 and CFG.Accent or CFG.ButtonOff
+    btn.BackgroundTransparency = 0.13
+    btn.Text = tab
+    btn.Font = CFG.Font
+    btn.TextColor3 = i==1 and Color3.fromRGB(15,21,30) or CFG.Neon
+    btn.TextSize = 17
+    btn.BorderSizePixel = 0
+    local bcorner = Instance.new("UICorner")
+    bcorner.CornerRadius = UDim.new(0, 12)
+    bcorner.Parent = btn
+    btn.Parent = tablist
+    tabFrames[i] = Instance.new("Frame")
+    tabFrames[i].Size = UDim2.new(1, -120, 1, -60)
+    tabFrames[i].Position = UDim2.new(0, 118, 0, 52)
+    tabFrames[i].BackgroundColor3 = Color3.fromRGB(18,23,32)
+    tabFrames[i].BackgroundTransparency = 0.38
+    tabFrames[i].BorderSizePixel = 0
+    tabFrames[i].Visible = (i==1)
+    local tcorner = Instance.new("UICorner")
+    tcorner.CornerRadius = UDim.new(0,12)
+    tcorner.Parent = tabFrames[i]
+    tabFrames[i].Parent = main
+    btn.MouseButton1Click:Connect(function()
+        for j=1,#tabs do
+            tabFrames[j].Visible = (i==j)
+            tablist[j].BackgroundColor3 = (i==j) and CFG.Accent or CFG.ButtonOff
+            tablist[j].TextColor3 = (i==j) and Color3.fromRGB(15,21,30) or CFG.Neon
+        end
+    end)
+end
+
+--== Circle Animated Toggle ==--
+local toggles = {}
+local function CircleToggle(parent, y, text, default, callback)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1,-36,0,46)
+    row.Position = UDim2.new(0,14,0,y)
+    row.BackgroundTransparency = 1
+    row.Parent = parent
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1,-54,1,0)
+    lbl.Position = UDim2.new(0,0,0,0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.Font = CFG.Font
+    lbl.TextColor3 = Color3.fromRGB(200,220,240)
+    lbl.TextSize = 16
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
+
+    local holder = Instance.new("Frame")
+    holder.Size = UDim2.new(0,40,0,40)
+    holder.Position = UDim2.new(1,-42,0.5,-20)
+    holder.BackgroundTransparency = 1
+    holder.Parent = row
+
+    local circle = Instance.new("Frame")
+    circle.Size = UDim2.new(0,36,0,36)
+    circle.Position = UDim2.new(0,2,0,2)
+    circle.BackgroundColor3 = default and CFG.ButtonOn or CFG.ButtonOff
+    circle.BackgroundTransparency = 0.18
+    circle.BorderSizePixel = 0
+    circle.Parent = holder
+    local cc = Instance.new("UICorner")
+    cc.CornerRadius = UDim.new(1,0)
+    cc.Parent = circle
+
+    local check = Instance.new("Frame")
+    check.Size = UDim2.new(0,22,0,22)
+    check.Position = UDim2.new(0.5,-11,0.5,-11)
+    check.BackgroundColor3 = CFG.Neon
+    check.BackgroundTransparency = default and 0.04 or 1
+    check.BorderSizePixel = 0
+    check.Parent = circle
+    local ccc = Instance.new("UICorner")
+    ccc.CornerRadius = UDim.new(1,0)
+    ccc.Parent = check
+
+    -- Animasyonlu aç/kapat
+    local state = default
+    local function set(v)
+        state = v
+        TweenService:Create(circle, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundColor3 = v and CFG.ButtonOn or CFG.ButtonOff,
+        }):Play()
+        TweenService:Create(check, TweenInfo.new(0.19, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundTransparency = v and 0.04 or 1
+        }):Play()
+        callback(v)
+    end
+    holder.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            set(not state)
+        end
+    end)
+    return set, function() return state end
+end
+
+--== Visual Tab (ESP toggles) ==--
+local y = 16
+local setESP, getESP = CircleToggle(tabFrames[1], y, "Neon Box ESP", true, function(v) _G.ESPEnabled = v end)
+local setName, getName = CircleToggle(tabFrames[1], y+52, "Show Name", true, function(v) _G.ShowName = v end)
+local setDist, getDist = CircleToggle(tabFrames[1], y+104, "Show Distance", true, function(v) _G.ShowDist = v end)
+local setTrace, getTrace = CircleToggle(tabFrames[1], y+156, "Tracers", true, function(v) _G.ShowTracer = v end)
+
+-- == Diğer Tablar (boş) ==
+for i=2,#tabs do
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1,-30,1,-30)
+    label.Position = UDim2.new(0, 15, 0, 15)
+    label.BackgroundTransparency = 1
+    label.Text = tabs[i].." özellikleri yakında!"
+    label.TextColor3 = CFG.Neon
+    label.Font = CFG.Font
+    label.TextSize = 20
+    label.TextWrapped = true
+    label.Parent = tabFrames[i]
+end
+
+-- Mobil sürükleme desteği
+local function enableMobileDrag(f)
+    local dragToggle, dragStart, startPos
+    f.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragToggle = true
+            dragStart = input.Position
+            startPos = f.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragToggle = false end end)
+        end
+    end)
+    f.InputChanged:Connect(function(input)
+        if dragToggle and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+            local delta = input.Position-dragStart
+            f.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+delta.X, startPos.Y.Scale, startPos.Y.Offset+delta.Y)
+        end
+    end)
+end
+enableMobileDrag(main)
+enableMobileDrag(mini)
+
+--== ESP ana değişkenler (bağlantı için) ==--
+_G.ESPEnabled = true
+_G.ShowName = true
+_G.ShowDist = true
+_G.ShowTracer = true
+
+--== Son: Tüm ESP fonksiyonlarını eski scriptinle birleştirip bu GUI ile bağlayabilirsin ==--
