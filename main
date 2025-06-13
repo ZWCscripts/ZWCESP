@@ -1,391 +1,213 @@
---// Player Highlighter & Modern Stealth GUI (ZWC, PC+Mobile) //--
--- Kodda ESP kelimesi yok, her şey “Highlight” olarak geçiyor.
+--//[ MENU and ESP-LIKE PLAYER HIGHLIGHT ]\\--
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local Camera = workspace.CurrentCamera
-local UserInputService = game:GetService("UserInputService")
 
--- Tema renkleri (koyu siyah/gri, mavi detay)
-local THEME_BG = Color3.fromRGB(20, 20, 28)
-local THEME_DARK = Color3.fromRGB(10, 10, 14)
-local THEME_BORDER = Color3.fromRGB(38, 48, 60)
-local THEME_ACCENT = Color3.fromRGB(50, 120, 255)
-local THEME_LABEL = Color3.fromRGB(200, 210, 240)
-local THEME_ON = Color3.fromRGB(60, 160, 255)
-local THEME_OFF = Color3.fromRGB(40, 44, 60)
-local THEME_BTN = Color3.fromRGB(30, 36, 52)
-local THEME_TRANS = 0.25
+-- SETTINGS
+local settings = {
+    ShowNames = true,
+    ShowTracers = true,
+    MenuOpen = true,
+    LineSize = 2,
+    HighlightColor = Color3.fromRGB(0, 170, 255) -- Mavi
+}
 
--- Ayarlar (kullanıcı tarafından değiştirilebilir)
-_G.HighlightEnabled = true
-_G.HighlightName = true
-_G.HighlightDist = true
-_G.HighlightBox = true
+-- ESP FUNCTIONALITY
+local highlights = {}
 
--- GUI OLUŞTURMA
-local gui = Instance.new("ScreenGui")
-gui.Name = "PlayerHighlighter"
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-local main = Instance.new("Frame")
-main.Name = "MainWindow"
-main.AnchorPoint = Vector2.new(0.5,0)
-main.Position = UDim2.new(0.5, 0, 0.27, 0)
-main.Size = UDim2.new(0, 400, 0, 340)
-main.BackgroundColor3 = THEME_BG
-main.BackgroundTransparency = THEME_TRANS
-main.BorderSizePixel = 2
-main.BorderColor3 = THEME_BORDER
-main.Active = true
-main.Draggable = true
-main.Parent = gui
-
--- ÜST BAR
-local bar = Instance.new("Frame")
-bar.Size = UDim2.new(1,0,0,34)
-bar.BackgroundColor3 = THEME_DARK
-bar.BorderSizePixel = 0
-bar.Parent = main
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1,-80,1,0)
-title.Position = UDim2.new(0,16,0,0)
-title.BackgroundTransparency = 1
-title.Text = "Player Highlighter Menu"
-title.Font = Enum.Font.GothamBold
-title.TextColor3 = THEME_LABEL
-title.TextSize = 20
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = bar
-
--- KAPATMA BUTONU
-local close = Instance.new("TextButton")
-close.Size = UDim2.new(0,28,0,28)
-close.Position = UDim2.new(1,-40,0.5,-14)
-close.BackgroundColor3 = THEME_BTN
-close.BackgroundTransparency = 0.13
-close.Text = "✕"
-close.TextColor3 = Color3.fromRGB(255,80,80)
-close.Font = Enum.Font.GothamBold
-close.TextSize = 18
-close.BorderSizePixel = 0
-close.Parent = bar
-
--- KÜÇÜLTME BUTONU
-local minimize = Instance.new("TextButton")
-minimize.Size = UDim2.new(0,28,0,28)
-minimize.Position = UDim2.new(1,-72,0.5,-14)
-minimize.BackgroundColor3 = THEME_BTN
-minimize.BackgroundTransparency = 0.13
-minimize.Text = "—"
-minimize.TextColor3 = THEME_ACCENT
-minimize.Font = Enum.Font.GothamBold
-minimize.TextSize = 18
-minimize.BorderSizePixel = 0
-minimize.Parent = bar
-
--- Küçültülmüş buton
-local mini = Instance.new("TextButton")
-mini.Name = "MiniButton"
-mini.Size = UDim2.new(0,38,0,38)
-mini.Position = UDim2.new(0,24,0,60)
-mini.BackgroundColor3 = THEME_BTN
-mini.BackgroundTransparency = 0.17
-mini.Text = "≡"
-mini.TextColor3 = THEME_ACCENT
-mini.Font = Enum.Font.GothamBold
-mini.TextSize = 26
-mini.BorderSizePixel = 0
-mini.Visible = false
-mini.Active = true
-mini.Draggable = true
-mini.Parent = gui
-
--- Yan menü
-local tablist = Instance.new("Frame")
-tablist.Size = UDim2.new(0, 118, 1, -44)
-tablist.Position = UDim2.new(0,0,0,34)
-tablist.BackgroundColor3 = THEME_DARK
-tablist.BackgroundTransparency = 0.19
-tablist.BorderSizePixel = 0
-tablist.Parent = main
-
-local tabNames = {"Visuals", "Other"}
-local tabFrames = {}
-local selectedTab = 1
-
-for i,tab in ipairs(tabNames) do
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -16, 0, 38)
-    btn.Position = UDim2.new(0, 8, 0, (i-1)*44 + 8)
-    btn.BackgroundColor3 = i==1 and THEME_ACCENT or THEME_BTN
-    btn.BackgroundTransparency = i==1 and 0.09 or 0.21
-    btn.Text = tab
-    btn.Font = Enum.Font.GothamBold
-    btn.TextColor3 = i==1 and THEME_BG or THEME_ACCENT
-    btn.TextSize = 16
-    btn.BorderSizePixel = 0
-    btn.Parent = tablist
-    tabFrames[i] = Instance.new("Frame")
-    tabFrames[i].Size = UDim2.new(1, -128, 1, -48)
-    tabFrames[i].Position = UDim2.new(0, 128, 0, 44)
-    tabFrames[i].BackgroundColor3 = THEME_DARK
-    tabFrames[i].BackgroundTransparency = 0.31
-    tabFrames[i].BorderSizePixel = 0
-    tabFrames[i].Visible = (i==1)
-    tabFrames[i].Parent = main
-    btn.MouseButton1Click:Connect(function()
-        for j=1,#tabNames do
-            tabFrames[j].Visible = (i==j)
-            tablist[j].BackgroundColor3 = (i==j) and THEME_ACCENT or THEME_BTN
-            tablist[j].TextColor3 = (i==j) and THEME_BG or THEME_ACCENT
-            tablist[j].BackgroundTransparency = (i==j) and 0.09 or 0.21
-        end
-    end)
-end
-
--- == Visuals Tab ==
-local visualsTab = tabFrames[1]
-local y = 18
-
-local function addToggle(text, default, cb)
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, -34, 0, 32)
-    bg.Position = UDim2.new(0, 16, 0, y)
-    bg.BackgroundColor3 = THEME_BTN
-    bg.BackgroundTransparency = 0.34
-    bg.BorderSizePixel = 0
-    bg.Parent = visualsTab
-
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1,-54,1,0)
-    lbl.Position = UDim2.new(0,0,0,0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = text
-    lbl.Font = Enum.Font.GothamBold
-    lbl.TextColor3 = THEME_LABEL
-    lbl.TextSize = 15
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = bg
-
-    local tog = Instance.new("TextButton")
-    tog.Size = UDim2.new(0, 32, 1, -8)
-    tog.Position = UDim2.new(1,-40,0,4)
-    tog.BackgroundColor3 = default and THEME_ON or THEME_OFF
-    tog.Text = default and "✓" or ""
-    tog.TextColor3 = default and THEME_BG or THEME_ACCENT
-    tog.Font = Enum.Font.GothamBold
-    tog.TextSize = 17
-    tog.BorderSizePixel = 0
-    tog.Parent = bg
-
-    local val = default
-    tog.MouseButton1Click:Connect(function()
-        val = not val
-        tog.BackgroundColor3 = val and THEME_ON or THEME_OFF
-        tog.Text = val and "✓" or ""
-        tog.TextColor3 = val and THEME_BG or THEME_ACCENT
-        cb(val)
-    end)
-    y = y + 38
-    return function() return val end
-end
-
-addToggle("Highlight Box", true, function(v) _G.HighlightBox = v end)
-addToggle("Show Name", true, function(v) _G.HighlightName = v end)
-addToggle("Show Distance", true, function(v) _G.HighlightDist = v end)
-
--- == Other Tab ==
-local info = Instance.new("TextLabel")
-info.Size = UDim2.new(1,-38,1,-38)
-info.Position = UDim2.new(0,19,0,19)
-info.BackgroundTransparency = 1
-info.Text = "Buraya ek özellikler ekleyebilirsin.\nScript tamamen özelleştirilebilir."
-info.TextColor3 = THEME_LABEL
-info.Font = Enum.Font.Gotham
-info.TextSize = 15
-info.TextWrapped = true
-info.Parent = tabFrames[2]
-
--- KÜÇÜLTME & KAPATMA
-local minimized = false
-minimize.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    main.Visible = not minimized
-    mini.Visible = minimized
-end)
-close.MouseButton1Click:Connect(function()
-    gui:Destroy()
-    for _,plr in ipairs(Players:GetPlayers()) do
-        if plr.Character and plr.Character:FindFirstChild("PH_BILL") then
-            plr.Character.PH_BILL:Destroy()
-        end
-        if plr.Character and plr.Character:FindFirstChild("PH_HL") then
-            plr.Character.PH_HL:Destroy()
+function createHighlight(player)
+    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        if not highlights[player] then
+            local hl = Instance.new("Highlight")
+            hl.Adornee = player.Character
+            hl.FillColor = settings.HighlightColor
+            hl.OutlineColor = Color3.new(1,1,1)
+            hl.FillTransparency = 0.7
+            hl.OutlineTransparency = 0
+            hl.Parent = player.Character
+            highlights[player] = hl
         end
     end
-end)
-mini.MouseButton1Click:Connect(function()
-    minimized = false
-    main.Visible = true
-    mini.Visible = false
+end
+
+function removeHighlight(player)
+    if highlights[player] then
+        highlights[player]:Destroy()
+        highlights[player] = nil
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        wait(1)
+        createHighlight(player)
+    end)
 end)
 
--- Mobil sürükleme desteği
-local function enableMobileDrag(f)
-    local dragToggle, dragStart, startPos
-    f.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragToggle = true
-            dragStart = input.Position
-            startPos = f.Position
-            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragToggle = false end end)
-        end
-    end)
-    f.InputChanged:Connect(function(input)
-        if dragToggle and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
-            local delta = input.Position-dragStart
-            f.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+delta.X, startPos.Y.Scale, startPos.Y.Offset+delta.Y)
-        end
-    end)
-end
-enableMobileDrag(main)
-enableMobileDrag(mini)
-
--- =======================
--- == PLAYER HIGHLIGHT ==
--- =======================
-local function createHighlight(char)
-    if not char or char:FindFirstChild("PH_HL") then return end
-    if not _G.HighlightBox then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
-    if not hrp then return end
-    local hl = Instance.new("Highlight")
-    hl.Name = "PH_HL"
-    hl.Adornee = char
-    hl.FillColor = THEME_ACCENT
-    hl.OutlineColor = THEME_ACCENT
-    hl.FillTransparency = 0.8
-    hl.OutlineTransparency = 0.13
-    hl.Parent = char
-end
-
-local function removeHighlight(char)
-    if char and char:FindFirstChild("PH_HL") then
-        char.PH_HL:Destroy()
-    end
-end
-
-local function createBillboard(plr, char)
-    if char:FindFirstChild("PH_BILL") then return end
-    local bb = Instance.new("BillboardGui")
-    bb.Name = "PH_BILL"
-    bb.Adornee = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
-    bb.Size = UDim2.new(0, 120, 0, 38)
-    bb.AlwaysOnTop = true
-    bb.StudsOffset = Vector3.new(0, 2.3, 0)
-    bb.Parent = char
-
-    local name = Instance.new("TextLabel")
-    name.Name = "PH_NAME"
-    name.BackgroundTransparency = 1
-    name.TextColor3 = THEME_ACCENT
-    name.TextStrokeTransparency = 0.7
-    name.Font = Enum.Font.GothamBold
-    name.TextSize = 16
-    name.Size = UDim2.new(1,0,0.59,0)
-    name.Text = plr.DisplayName or plr.Name
-    name.Visible = _G.HighlightName
-    name.Parent = bb
-
-    local dist = Instance.new("TextLabel")
-    dist.Name = "PH_DIST"
-    dist.BackgroundTransparency = 1
-    dist.TextColor3 = THEME_ACCENT
-    dist.TextStrokeTransparency = 0.5
-    dist.Font = Enum.Font.Gotham
-    dist.TextSize = 14
-    dist.Position = UDim2.new(0,0,0.59,-2)
-    dist.Size = UDim2.new(1,0,0.41,0)
-    dist.Text = ""
-    dist.Visible = _G.HighlightDist
-    dist.Parent = bb
-end
-
-local function removeBillboard(char)
-    if char and char:FindFirstChild("PH_BILL") then
-        char.PH_BILL:Destroy()
-    end
-end
-
-local function updateBillboard(plr, char)
-    local bb = char:FindFirstChild("PH_BILL")
-    if bb then
-        local name = bb:FindFirstChild("PH_NAME")
-        local dist = bb:FindFirstChild("PH_DIST")
-        if name then name.Visible = _G.HighlightName end
-        if dist then
-            dist.Visible = _G.HighlightDist
-            if _G.HighlightDist and char:FindFirstChild("HumanoidRootPart") then
-                local studs = (char.HumanoidRootPart.Position-Camera.CFrame.Position).Magnitude
-                dist.Text = string.format("%.0fm", studs/3.3)
-            else
-                dist.Text = ""
-            end
-        end
-    end
-end
-
-local function applyHighlight(plr)
-    if plr == LocalPlayer then return end
-    local function charAdded(char)
-        if _G.HighlightBox then createHighlight(char) end
-        createBillboard(plr,char)
-        char.AncestryChanged:Connect(function(_, parent)
-            if not parent then
-                removeHighlight(char)
-                removeBillboard(char)
-            end
-        end)
-    end
-    if plr.Character then charAdded(plr.Character) end
-    plr.CharacterAdded:Connect(charAdded)
-end
-
-local function clearAll()
-    for _,plr in ipairs(Players:GetPlayers()) do
-        if plr.Character then
-            removeHighlight(plr.Character)
-            removeBillboard(plr.Character)
-        end
-    end
-end
-
-Players.PlayerAdded:Connect(applyHighlight)
-Players.PlayerRemoving:Connect(function(plr) clearAll() end)
-for _,plr in ipairs(Players:GetPlayers()) do
-    applyHighlight(plr)
-end
+Players.PlayerRemoving:Connect(function(player)
+    removeHighlight(player)
+end)
 
 RunService.RenderStepped:Connect(function()
-    for _,plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character then
-            if _G.HighlightBox and not plr.Character:FindFirstChild("PH_HL") then
-                createHighlight(plr.Character)
-            end
-            updateBillboard(plr, plr.Character)
-            if not _G.HighlightBox then
-                removeHighlight(plr.Character)
-            end
-            if not _G.HighlightName and not _G.HighlightDist then
-                removeBillboard(plr.Character)
-            elseif not plr.Character:FindFirstChild("PH_BILL") then
-                createBillboard(plr, plr.Character)
-            end
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            createHighlight(player)
+        else
+            removeHighlight(player)
         end
     end
 end)
+
+-- ESP LABEL & TRACER
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "MaviESPMenu"
+
+local function DrawESP()
+    for _, v in pairs(gui:GetChildren()) do
+        if v.Name == "ESPLABEL" or v.Name == "TRACERLINE" then
+            v:Destroy()
+        end
+    end
+    if not settings.ShowNames and not settings.ShowTracers then return end
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local pos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+            if onScreen then
+                if settings.ShowNames then
+                    local nameLabel = Instance.new("TextLabel", gui)
+                    nameLabel.Name = "ESPLABEL"
+                    nameLabel.AnchorPoint = Vector2.new(0.5,0)
+                    nameLabel.Position = UDim2.fromOffset(pos.X, pos.Y)
+                    nameLabel.Text = player.Name.." ["..math.floor((LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude).." Studs]"
+                    nameLabel.TextColor3 = Color3.fromRGB(0,170,255)
+                    nameLabel.BackgroundTransparency = 1
+                    nameLabel.Font = Enum.Font.SourceSansBold
+                    nameLabel.TextSize = 14
+                    nameLabel.Size = UDim2.new(0, 200, 0, 20)
+                end
+                if settings.ShowTracers then
+                    local line = Instance.new("Frame", gui)
+                    line.Name = "TRACERLINE"
+                    line.AnchorPoint = Vector2.new(0,0)
+                    line.BackgroundColor3 = Color3.fromRGB(0,170,255)
+                    line.BorderSizePixel = 0
+                    line.Position = UDim2.fromOffset(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+                    local dist = (Vector2.new(pos.X, pos.Y)-Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)).Magnitude
+                    local angle = math.atan2(pos.Y-Camera.ViewportSize.Y, pos.X-Camera.ViewportSize.X/2)
+                    line.Size = UDim2.new(0, dist, 0, settings.LineSize)
+                    line.Rotation = math.deg(angle)
+                    line.BackgroundTransparency = 0.2
+                end
+            end
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(DrawESP)
+
+--// MENU UI \\--
+local menu = Instance.new("Frame", gui)
+menu.Name = "Menu"
+menu.BackgroundColor3 = Color3.fromRGB(30,30,40)
+menu.BorderSizePixel = 0
+menu.Position = UDim2.fromOffset(100,100)
+menu.Size = UDim2.new(0, 320, 0, 220)
+menu.Visible = settings.MenuOpen
+menu.Active = true
+menu.Draggable = true
+
+local uicorner = Instance.new("UICorner", menu)
+uicorner.CornerRadius = UDim.new(0,8)
+
+local title = Instance.new("TextLabel", menu)
+title.Text = "[SKINS UPDATE!] Mavi ESP!"
+title.Size = UDim2.new(1,0,0,36)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+
+local function makeToggle(y, text, setting)
+    local toggle = Instance.new("TextButton", menu)
+    toggle.Text = text
+    toggle.Size = UDim2.new(0.7, 0, 0, 32)
+    toggle.Position = UDim2.new(0.05,0,0, y)
+    toggle.BackgroundColor3 = Color3.fromRGB(40,40,50)
+    toggle.TextColor3 = Color3.fromRGB(210,210,210)
+    toggle.Font = Enum.Font.Gotham
+    toggle.TextSize = 15
+    toggle.AutoButtonColor = true
+    toggle.MouseButton1Click:Connect(function()
+        settings[setting] = not settings[setting]
+        toggle.BackgroundColor3 = settings[setting] and Color3.fromRGB(0,170,255) or Color3.fromRGB(40,40,50)
+    end)
+    toggle.BackgroundColor3 = settings[setting] and Color3.fromRGB(0,170,255) or Color3.fromRGB(40,40,50)
+end
+
+makeToggle(48, "Show Name", "ShowNames")
+makeToggle(88, "Tracers", "ShowTracers")
+
+-- Line Size Slider
+local slider = Instance.new("TextLabel", menu)
+slider.Text = "Line Size: "..settings.LineSize
+slider.Size = UDim2.new(0.7,0,0,32)
+slider.Position = UDim2.new(0.05,0,0,128)
+slider.BackgroundColor3 = Color3.fromRGB(40,40,50)
+slider.TextColor3 = Color3.fromRGB(210,210,210)
+slider.Font = Enum.Font.Gotham
+slider.TextSize = 15
+
+slider.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local con
+        con = game:GetService("UserInputService").InputChanged:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch then
+                local x = math.clamp(inp.Position.X - slider.AbsolutePosition.X, 1, slider.AbsoluteSize.X)
+                settings.LineSize = math.floor(x/10)
+                slider.Text = "Line Size: "..settings.LineSize
+            end
+        end)
+        input.Changed:Connect(function()
+            con:Disconnect()
+        end)
+    end
+end)
+
+-- Destroy GUI Button
+local destroy = Instance.new("TextButton", menu)
+destroy.Text = "Destroy GUI"
+destroy.Size = UDim2.new(0.7,0,0,32)
+destroy.Position = UDim2.new(0.05,0,0,168)
+destroy.BackgroundColor3 = Color3.fromRGB(60,20,20)
+destroy.TextColor3 = Color3.fromRGB(255,255,255)
+destroy.Font = Enum.Font.GothamBold
+destroy.TextSize = 15
+destroy.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+-- MENU TOGGLE BUTTON
+local openButton = Instance.new("TextButton", gui)
+openButton.Text = "☰"
+openButton.Size = UDim2.new(0,44,0,44)
+openButton.Position = UDim2.fromOffset(20, 20)
+openButton.BackgroundColor3 = Color3.fromRGB(0,170,255)
+openButton.TextColor3 = Color3.fromRGB(255,255,255)
+openButton.Font = Enum.Font.GothamBold
+openButton.TextSize = 20
+openButton.ZIndex = 3
+openButton.AutoButtonColor = true
+
+openButton.MouseButton1Click:Connect(function()
+    settings.MenuOpen = not settings.MenuOpen
+    menu.Visible = settings.MenuOpen
+end)
+
+-- Mobile support (menu and button are draggable)
+menu.Draggable = true
+openButton.Draggable = true
+
+-- END OF SCRIPT
